@@ -1,7 +1,7 @@
 import { styled } from "@/styles";
 import { HomeContainer, Product } from "@/styles/pages/home";
 import { stripe } from "@/lib/stripe";
-import { GetServerSideProps } from "next";
+import { GetStaticProps } from "next";
 import { useKeenSlider } from "keen-slider/react";
 import Image from "next/image";
 import Stripe from "stripe";
@@ -49,19 +49,20 @@ export default function Home({ product }: HomeProps) {
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async () => {
+export const getStaticProps: GetStaticProps = async () => {
   const response = await stripe.products.list({
     expand: ["data.default_price"],
   });
 
   const product = response.data.map((product) => {
     const price = product.default_price as Stripe.Price;
+    const unit_amount = price.unit_amount ? price.unit_amount / 100 : 0;
 
     return {
       id: product.id,
       name: product.name,
       imageUrl: product.images[0],
-      price: price.unit_amount / 100,
+      price:unit_amount,
     };
   });
 
@@ -69,5 +70,6 @@ export const getServerSideProps: GetServerSideProps = async () => {
     props: {
       product,
     },
+    revalidate: 60 * 60 * 2,
   };
 };
